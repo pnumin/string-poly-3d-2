@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>StringPoly 3D Middle - 중학교 수학 3D 기하 공학도구 & 탐구 랩</title>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+
+  <!-- KaTeX for crisp math rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Three.js & OrbitControls UMD (Standalone, 100% CORS-Free for file://) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header>
+      <div class="brand-wrapper">
+        <span class="logo-badge">중등 기하 공학도구</span>
+        <h1>StringPoly <span style="font-weight:400; color:var(--primary);">3D Middle</span></h1>
+        <span class="curriculum-tag">[9수03-07] [9수03-08]</span>
+      </div>
+
+      <!-- Mode Selection Tabs -->
+      <nav class="mode-nav">
+        <button id="btn-mode-poly" class="mode-btn active" data-mode="poly">
+          <span>🔷</span> 다면체 & 전개도
+        </button>
+        <button id="btn-mode-revol" class="mode-btn" data-mode="revol">
+          <span>🔄</span> 회전체 & 단면
+        </button>
+      </nav>
+
+      <!-- Header Action Buttons -->
+      <div class="header-actions">
+        <button id="btn-open-lab" class="btn-action active-lab">
+          <span>🧪</span> 탐구 랩실 패널 (ON)
+        </button>
+        <button id="btn-open-print" class="btn-action primary">
+          <span>🖨️</span> A4 전개도 인쇄소
+        </button>
+        <button id="btn-open-curriculum" class="btn-action" title="교육과정 성취기준 안내">
+          <span>📖</span> 성취기준 안내
+        </button>
+      </div>
+    </header>
+
+    <!-- Sub Navigation: Shapes Selector Bar -->
+    <nav id="sub-nav" class="sub-nav">
+      <!-- Polyhedra shapes (Default) -->
+      <div id="poly-shapes" style="display:flex; gap:8px;">
+        <button class="shape-btn active" data-shape="tetrahedron">🔶 정사면체</button>
+        <button class="shape-btn" data-shape="cube">🟩 정육면체</button>
+        <button class="shape-btn" data-shape="octahedron">💎 정팔면체</button>
+        <button class="shape-btn" data-shape="prism_tri">📐 삼각기둥</button>
+        <button class="shape-btn" data-shape="cuboid">📦 사각기둥 (직육면체)</button>
+        <button class="shape-btn" data-shape="pyramid_sq">🔺 사각뿔</button>
+        <button class="shape-btn" data-shape="pyramid_hex">⭐ 육각뿔</button>
+        <button class="shape-btn" data-shape="pyramid_trunc">🧱 사각뿔대</button>
+      </div>
+      <!-- Revolution shapes (Hidden by default) -->
+      <div id="revol-shapes" style="display:none; gap:8px;">
+        <button class="shape-btn" data-shape="cylinder">🌸 원기둥 (직사각형 회전)</button>
+        <button class="shape-btn" data-shape="cone">🍦 원뿔 (직각삼각형 회전)</button>
+        <button class="shape-btn" data-shape="cone_trunc">🏺 원뿔대 (사다리꼴 회전)</button>
+        <button class="shape-btn" data-shape="sphere">⚽ 구 (반원 회전)</button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area: 3D Viewport + Docked Side Lab Panel -->
+    <main>
+      <!-- 1. Left/Center: 3D Viewport & Interactive Tools -->
+      <div id="viewport-wrapper">
+        <div id="canvas-container"></div>
+
+        <!-- Floating Button to Open Lab if collapsed -->
+        <button id="btn-open-lab-float">🧪 탐구 랩 열기 ▶</button>
+
+        <!-- Top Left: Shape Info & Mathematical Properties Card -->
+        <div class="info-card">
+          <div class="info-header">
+            <h2 id="info-title" class="info-title">정사면체 (Regular Tetrahedron)</h2>
+            <span id="info-category" class="info-category">정다면체</span>
+          </div>
+          <p id="info-desc" class="info-desc">4개의 합동인 정삼각형으로 둘러싸여 있으며, 한 꼭짓점에 3개의 면이 모이는 정다면체입니다.</p>
+          <div id="math-badges" class="math-badges">
+            <span class="math-badge" id="badge-v">꼭짓점(V): 4개</span>
+            <span class="math-badge" id="badge-e">모서리(E): 6개</span>
+            <span class="math-badge" id="badge-f">면(F): 4개</span>
+            <span class="math-badge highlight" id="badge-euler">V - E + F = 2</span>
+          </div>
+        </div>
+
+        <!-- Top Right: View Controls -->
+        <div class="view-tools">
+          <div class="tool-group">
+            <button id="btn-cam-reset" class="tool-btn" title="시점 리셋">🎯</button>
+            <button id="btn-auto-rotate" class="tool-btn" title="360도 자동 회전">🔄</button>
+            <button id="btn-xray" class="tool-btn" title="X-Ray 투시 모드">👁️</button>
+            <button id="btn-axis" class="tool-btn" title="회전축/좌표축 표시">📍</button>
+          </div>
+        </div>
+
+        <!-- Cross-Section 2D Minimap Panel (회전체 모드에서 활성화) -->
+        <div id="minimap-panel" class="minimap-panel">
+          <div class="minimap-title">✂️ 잘린 단면의 모양 (2D)</div>
+          <canvas id="cross-section-canvas" width="140" height="110"></canvas>
+          <p id="minimap-caption" class="minimap-caption">회전축에 수직인 단면: <strong>원</strong></p>
+        </div>
+
+        <!-- Bottom Interaction Controller Panel -->
+        <div class="pull-panel">
+          <!-- Polyhedra Controller: PULL Slider -->
+          <div id="poly-ctrl-group">
+            <div class="ctrl-header">
+              <div class="status-badge">
+                <span class="status-dot"></span>
+                <span id="poly-state-label">평면 전개도 (2D 상태)</span>
+              </div>
+              <span id="poly-percentage" class="ctrl-value">0%</span>
+            </div>
+            <div class="slider-wrapper">
+              <span class="slider-label">2D 전개도</span>
+              <input type="range" id="pull-slider" class="range-input" min="0" max="100" value="0" step="0.5">
+              <span class="slider-label">3D 입체 완성</span>
+            </div>
+            <div class="ctrl-actions">
+              <button id="btn-unfold" class="btn-ctrl">◀ 완전 펼치기</button>
+              <button id="btn-play-poly" class="btn-play">▶ 실 당기기 (자동 시연)</button>
+              <button id="btn-fold" class="btn-ctrl">완전 조립 ▶</button>
+            </div>
+          </div>
+
+          <!-- Revolution Controller: Revolve Angle & Cross Section Slider -->
+          <div id="revol-ctrl-group" style="display:none; flex-direction:column; gap:8px;">
+            <!-- 1. Revolution Angle -->
+            <div>
+              <div class="ctrl-header">
+                <div class="status-badge">
+                  <span class="status-dot" style="background:var(--primary);"></span>
+                  <span>회전축(L) 중심 평면도형 회전각</span>
+                </div>
+                <span id="revol-deg-value" class="ctrl-value">360°</span>
+              </div>
+              <div class="slider-wrapper">
+                <span class="slider-label">0° (평면)</span>
+                <input type="range" id="revol-slider" class="range-input" min="0" max="360" value="360" step="2">
+                <span class="slider-label">360° (완성)</span>
+              </div>
+            </div>
+
+            <!-- 2. Cross-Section Tool -->
+            <div style="border-top:1px dashed var(--border); padding-top:6px;">
+              <div class="ctrl-header">
+                <div class="status-badge">
+                  <span class="status-dot" style="background:var(--rose);"></span>
+                  <span>단면 자르기 (Cross-Section)</span>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button id="btn-cut-perp" class="btn-ctrl active" style="font-size:11px;">수직 평면</button>
+                  <button id="btn-cut-axis" class="btn-ctrl" style="font-size:11px;">회전축 포함 평면</button>
+                </div>
+              </div>
+              <div class="slider-wrapper" style="margin-top:6px;">
+                <span class="slider-label">절단 높이</span>
+                <input type="range" id="cut-height-slider" class="range-input" min="0" max="100" value="50" step="1">
+                <span id="cut-pos-val" class="ctrl-value" style="font-size:11px;">중앙</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Right: Docked Side Lab Panel (도형을 보면서 함께 조작하는 성취기준 탐구 랩) -->
+      <aside id="docked-lab-panel">
+        <div class="lab-panel-header">
+          <div class="lab-panel-title">
+            <span>🧪</span>
+            <span>성취기준 탐구 랩실</span>
+          </div>
+          <button id="btn-toggle-lab" class="btn-toggle-lab" title="패널 접기">▶</button>
+        </div>
+
+        <!-- Lab Navigation Sub-tabs -->
+        <nav class="lab-sidebar-tabs">
+          <button class="lab-side-tab-btn active" data-tab="lab-euler">① 오일러 공식</button>
+          <button class="lab-side-tab-btn" data-tab="lab-platonic">② 정다면체 조건</button>
+          <button class="lab-side-tab-btn" data-tab="lab-surface">③ 겉넓이와 부피</button>
+          <button class="lab-side-tab-btn" data-tab="lab-explain">④ 탐구 설명 카드</button>
+        </nav>
+
+        <!-- Lab Body Content -->
+        <div class="lab-panel-body">
+          <!-- Lab 1: Euler Formula -->
+          <div id="tab-lab-euler" class="lab-tab-content">
+            <div class="lab-card">
+              <h4 class="lab-title">📐 다면체와 오일러 정리 ($V-E+F=2$)</h4>
+              <p class="lab-desc">
+                왼쪽 화면의 3D 도형을 회전시켜 보며 <strong>꼭짓점($V$)</strong>, <strong>모서리($E$)</strong>, <strong>면($F$)</strong>의 개수를 세어 표에 입력해 보세요.
+              </p>
+              <table class="lab-table">
+                <thead>
+                  <tr>
+                    <th>도형</th>
+                    <th>V</th>
+                    <th>E</th>
+                    <th>F</th>
+                    <th>V-E+F</th>
+                    <th>검증</th>
+                  </tr>
+                </thead>
+                <tbody id="euler-table-body">
+                  <tr>
+                    <td>정사면체</td>
+                    <td><input type="number" id="v-tetra" placeholder="?"></td>
+                    <td><input type="number" id="e-tetra" placeholder="?"></td>
+                    <td><input type="number" id="f-tetra" placeholder="?"></td>
+                    <td id="res-tetra">-</td>
+                    <td><button class="btn-ctrl" onclick="App.checkEuler('tetra', 4, 6, 4)">확인</button></td>
+                  </tr>
+                  <tr>
+                    <td>정육면체</td>
+                    <td><input type="number" id="v-cube" placeholder="?"></td>
+                    <td><input type="number" id="e-cube" placeholder="?"></td>
+                    <td><input type="number" id="f-cube" placeholder="?"></td>
+                    <td id="res-cube">-</td>
+                    <td><button class="btn-ctrl" onclick="App.checkEuler('cube', 8, 12, 6)">확인</button></td>
+                  </tr>
+                  <tr>
+                    <td>정팔면체</td>
+                    <td><input type="number" id="v-octa" placeholder="?"></td>
+                    <td><input type="number" id="e-octa" placeholder="?"></td>
+                    <td><input type="number" id="f-octa" placeholder="?"></td>
+                    <td id="res-octa">-</td>
+                    <td><button class="btn-ctrl" onclick="App.checkEuler('octa', 6, 12, 8)">확인</button></td>
+                  </tr>
+                  <tr>
+                    <td>삼각기둥</td>
+                    <td><input type="number" id="v-prism" placeholder="?"></td>
+                    <td><input type="number" id="e-prism" placeholder="?"></td>
+                    <td><input type="number" id="f-prism" placeholder="?"></td>
+                    <td id="res-prism">-</td>
+                    <td><button class="btn-ctrl" onclick="App.checkEuler('prism', 6, 9, 5)">확인</button></td>
+                  </tr>
+                  <tr>
+                    <td>사각뿔대</td>
+                    <td><input type="number" id="v-trunc" placeholder="?"></td>
+                    <td><input type="number" id="e-trunc" placeholder="?"></td>
+                    <td><input type="number" id="f-trunc" placeholder="?"></td>
+                    <td id="res-trunc">-</td>
+                    <td><button class="btn-ctrl" onclick="App.checkEuler('trunc', 8, 12, 6)">확인</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="lab-result-box" id="euler-conclusion">
+                💡 <strong>발견한 성질</strong>: 모든 다면체에서 <strong>꼭짓점 수($V$) - 모서리 수($E$) + 면의 수($F$) = 2</strong> 가 항상 성립합니다!
+              </div>
+            </div>
+          </div>
+
+          <!-- Lab 2: Platonic Solids Condition -->
+          <div id="tab-lab-platonic" class="lab-tab-content" style="display:none;">
+            <div class="lab-card">
+              <h4 class="lab-title">💎 정다면체는 왜 5가지뿐일까?</h4>
+              <p class="lab-desc">
+                꼭짓점이 입체로 솟아오르려면 <strong>한 꼭짓점에 모인 면의 내각의 합이 $360^\circ$보다 작아야</strong> 합니다. 직접 면의 개수를 선택해 보세요.
+              </p>
+              <div style="background:#f8fafc; padding:10px; border-radius:6px; margin-bottom:10px;">
+                <div style="font-size:11.5px; font-weight:600; margin-bottom:6px;">정다각형 모으기 테스트:</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="btn-ctrl" onclick="App.testPlatonic(60, 3, '정사면체')">정삼각형 3개 (180°)</button>
+                  <button class="btn-ctrl" onclick="App.testPlatonic(60, 4, '정팔면체')">정삼각형 4개 (240°)</button>
+                  <button class="btn-ctrl" onclick="App.testPlatonic(60, 5, '정이십면체')">정삼각형 5개 (300°)</button>
+                  <button class="btn-ctrl" style="color:var(--rose);" onclick="App.testPlatonic(60, 6, '불가능')">정삼각형 6개 (360° ➔ 평면!)</button>
+                  <button class="btn-ctrl" onclick="App.testPlatonic(90, 3, '정육면체')">정사각형 3개 (270°)</button>
+                  <button class="btn-ctrl" style="color:var(--rose);" onclick="App.testPlatonic(90, 4, '불가능')">정사각형 4개 (360° ➔ 평면!)</button>
+                  <button class="btn-ctrl" onclick="App.testPlatonic(108, 3, '정십이면체')">정오각형 3개 (324°)</button>
+                  <button class="btn-ctrl" style="color:var(--rose);" onclick="App.testPlatonic(120, 3, '불가능')">정육각형 3개 (360° ➔ 평면!)</button>
+                </div>
+              </div>
+              <div id="platonic-test-result" class="lab-result-box" style="background:#eff6ff; border-color:#bfdbfe; color:#1e40af;">
+                버튼을 눌러 각도의 합과 입체 형성 가능 여부를 확인하세요.
+              </div>
+            </div>
+          </div>
+
+          <!-- Lab 3: Cone Surface Area & Volume Relation -->
+          <div id="tab-lab-surface" class="lab-tab-content" style="display:none;">
+            <div class="lab-card">
+              <h4 class="lab-title">🍦 입체도형의 겉넓이와 부피 원리 [9수03-08]</h4>
+              <p class="lab-desc">
+                원뿔 전개도에서 옆면 부채꼴 <strong>호의 길이</strong>는 밑면 원 <strong>둘레($2\pi r$)</strong>와 같습니다.<br>
+                또한 원뿔의 부피는 밑면과 높이가 같은 원기둥 부피의 <strong>$\frac{1}{3}$</strong>입니다.
+              </p>
+              <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
+                <div>
+                  <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:600; margin-bottom:4px;">
+                    <span>모선의 길이 ($R$):</span>
+                    <span id="val-cone-R" class="ctrl-value">10 cm</span>
+                  </div>
+                  <input type="range" id="slider-cone-R" class="range-input" min="6" max="15" value="10">
+                </div>
+                <div>
+                  <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:600; margin-bottom:4px;">
+                    <span>밑면 반지름 ($r$):</span>
+                    <span id="val-cone-r" class="ctrl-value">4 cm</span>
+                  </div>
+                  <input type="range" id="slider-cone-r" class="range-input" min="2" max="6" value="4">
+                </div>
+              </div>
+              <div class="lab-result-box" id="cone-math-result">
+                • 밑면 둘레 = $2\pi r = 8\pi\text{ cm}$<br>
+                • 부채꼴 중심각 $x = 360^\circ \times \frac{4}{10} = 144^\circ$<br>
+                • 원뿔 겉넓이 = 밑넓이($16\pi$) + 옆넓이($40\pi$) = $56\pi\text{ cm}^2$<br>
+                • <strong>부피 관계</strong>: 높이가 $h$일 때, $\text{원뿔의 부피} = \frac{1}{3}\pi r^2 h = \frac{1}{3} \times (\text{원기둥 부피})$
+              </div>
+            </div>
+          </div>
+
+          <!-- Lab 4: Explain & Share (성취기준: 설명할 수 있다) -->
+          <div id="tab-lab-explain" class="lab-tab-content" style="display:none;">
+            <div class="lab-card">
+              <h4 class="lab-title">✍️ 나만의 기하 탐구 설명 카드</h4>
+              <p class="lab-desc">
+                성취기준 <strong>[9수03-07]</strong> 핵심 행동: <em>"성질을 탐구하고, 이를 설명할 수 있다"</em><br>
+                왼쪽 도형을 관찰하며 발견한 성질을 설명문으로 적어보세요.
+              </p>
+              <div class="form-group">
+                <label class="form-label">탐구한 도형 선택:</label>
+                <select id="explain-shape-select" class="form-select">
+                  <option value="사각뿔대">사각뿔대 (각뿔을 평행하게 자른 도형)</option>
+                  <option value="원뿔대">원뿔대 (사다리꼴을 축으로 회전)</option>
+                  <option value="정사면체">정사면체 (정다면체 5종 중 하나)</option>
+                  <option value="회전체단면">원뿔 단면 (수직=원, 포함=이등변삼각형)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">내가 발견한 핵심 성질과 논리적 설명:</label>
+                <textarea id="explain-text" class="form-textarea" placeholder="예: 사각뿔대는 각뿔을 밑면에 평행한 평면으로 잘랐기 때문에 두 밑면은 평행하지만 합동이 아닙니다. 옆면 4개는 모두 사다리꼴이 됩니다."></textarea>
+              </div>
+              <button class="btn-action primary" style="width:100%;" onclick="App.generateExplainCard()">📋 탐구 카드 완성 & 인쇄</button>
+              <div id="explain-card-output" style="margin-top:10px;"></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Modal 1: DIY A4 전개도 인쇄소 -->
+    <div id="modal-print" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">🖨️ A4 규격 DIY 중등 전개도 인쇄소</h3>
+          <button class="btn-close" data-close="modal-print">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
+            A4 1장에 맞춰 출력됩니다. 180g~250g 도화지에 인쇄하여 실을 꿰어 당기면 3D 입체도형이 기립합니다.
+          </p>
+          <div class="print-preview-container">
+            <div id="print-svg-preview"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-action" data-close="modal-print">취소</button>
+          <button id="btn-print-action" class="btn-action primary">🖨️ A4 도안 바로 인쇄</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 2: 교육과정 성취기준 안내 -->
+    <div id="modal-curriculum" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">📖 2022 개정 교육과정 수학과 성취기준 안내</h3>
+          <button class="btn-close" data-close="modal-curriculum">✕</button>
+        </div>
+        <div class="modal-body" style="font-size:13px; line-height:1.6; color:#334155;">
+          <h4 style="color:#0f172a; margin-bottom:8px;">[중학교 1~3학년군 - 도형과 측정 영역]</h4>
+          <div style="background:#f1f5f9; padding:12px; border-radius:8px; margin-bottom:12px;">
+            <strong>• [9수03-07]</strong> 구체적인 모형이나 공학 도구를 이용하여 다면체와 회전체의 성질을 탐구하고, 이를 설명할 수 있다.<br>
+            <strong>• [9수03-08]</strong> 입체도형의 겉넓이와 부피를 구할 수 있다.
+          </div>
+          <h4 style="color:#0f172a; margin-bottom:6px;">성취기준 해설 및 고려사항</h4>
+          <ul style="padding-left:20px; margin-bottom:12px;">
+            <li>구체적인 사물, 전개도, 교구, 컴퓨터 프로그램(공학 도구)을 이용하여 다면체와 회전체를 관찰하고 그 성질을 탐구합니다.</li>
+            <li>회전체 단면의 모양은 회전체의 성질을 이해하는 데 필요한 정도로 다룹니다. (회전축에 수직인 단면 = 원, 회전축을 포함하는 단면 = 선대칭도형)</li>
+            <li>간단한 입체도형의 단면 관찰과 전개도를 접어 만드는 활동을 통해 평면도형과 입체도형의 관계를 직관적으로 이해합니다.</li>
+            <li>복잡하게 변형된 입체도형의 겉넓이와 부피 문제는 다루지 않습니다.</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-action" data-close="modal-curriculum">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden Print Area for Native window.print() -->
+    <div id="print-area" style="display:none;"></div>
+  </div>
+
+  <!-- Main Standalone Application JS -->
+  <script src="js/app.js"></script>
+</body>
+</html>

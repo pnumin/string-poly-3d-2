@@ -1,0 +1,44 @@
+/* web2/css/print.css - A4 Net Printing Style */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide everything except print area */
+  header,
+  main,
+  .mode-nav,
+  .tool-panel,
+  .view-tools,
+  .modal-overlay,
+  .no-print,
+  #canvas-container {
+    display: none !important;
+  }
+
+  #print-area {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  #print-area svg {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 280mm;
+    page-break-inside: avoid;
+  }
+}
